@@ -41,7 +41,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * REPLACE WITH NON-SHOUTING DESCRIPTION OF YOUR APP.
+ * Represents an App that takes in the title of a book and returns a list of media associated
+ * with the work's author.
  */
 public class ApiApp extends Application {
 
@@ -145,6 +146,7 @@ public class ApiApp extends Application {
 
     } // start
 
+    /** {@inheritDoc} */
     public void init() {
         System.out.println("init() called");
 
@@ -189,7 +191,6 @@ public class ApiApp extends Application {
         bestKnownFor.setFont(new Font(15));
         otherWorks.setFont(new Font(15));
 
-
     } // init
 
     private static HttpClient BOOK_HTTP_CLIENT = HttpClient.newBuilder()
@@ -201,7 +202,12 @@ public class ApiApp extends Application {
         .setPrettyPrinting()
         .create();
 
-
+    /**
+     * Constructs a JSON using the inputted text, parses it to a GSON and saves
+     * the intended response in a {@code author} variable.
+     *
+     * @param searchText the input into the {@code search} search bar
+     */
     private void retrieveBooks(String searchText) {
         try {
             String query = URLEncoder.encode(searchText, StandardCharsets.UTF_8);
@@ -246,6 +252,10 @@ public class ApiApp extends Application {
         .setPrettyPrinting()
         .create();
 
+    /**
+     * Constructs a JSON using the {@code author} variable, parses it to a GSON and saves
+     * the intended response in a {@code authorId} variable.
+     */
     private void retrieveMedia1() {
         try {
             if (author == null) {
@@ -292,7 +302,10 @@ public class ApiApp extends Application {
         } // try
     } // retrieveMedia1
 
-
+    /**
+     * Constructs a JSON using the {@code authorId} variable, parses it to a GSON and saves
+     * the intended responses in a set of arrays.
+     */
     private void retrieveMedia2() {
         try {
             if (authorId == null) {
@@ -301,27 +314,22 @@ public class ApiApp extends Application {
             } // if
             String uri = "https://imdb-api.com/en/API/Name/" + key() + "/" + authorId;
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .build();
+                .uri(URI.create(uri)).build();
             HttpResponse<String> response = MOVIE_HTTP_CLIENT2
                 .send(request, BodyHandlers.ofString());
             if (response.statusCode() != 200) {
                 throw new IOException(response.toString());
             } // if
-            String jsonString = response.body();
             IMDbIDResponse idResponse = MOVIE_GSON2
-                .fromJson(jsonString, IMDbIDResponse.class);
-
+                .fromJson(response.body(), IMDbIDResponse.class);
             for (int i = 0; i < 15; i++) {
                 titles[i] = null;
                 years[i] = null;
                 if (i < 4) {
                     images[i] = null;
-                }
+                } // if
             } // for
-
             numResults = 0;
-
             if (idResponse.knownFor.length >= 1 && idResponse.castMovies.length >= 1) {
                 for (int i = 0; i < idResponse.knownFor.length; i++) {
                     IMDbIDResult result = idResponse.knownFor[i];
@@ -332,10 +340,10 @@ public class ApiApp extends Application {
                             years[i] = "(no year listed)";
                         } else {
                             years[i] = "(" + result.year + ")";
-                        }
+                        } // if
                         numResults++;
-                    }
-                } // fot
+                    } // if
+                } // for
                 for (int i = 0, j = 4; i < idResponse.castMovies.length; i++) {
                     IMDbIDResult result = idResponse.castMovies[i];
                     if (result.role.equalsIgnoreCase("writer")) {
@@ -344,53 +352,47 @@ public class ApiApp extends Application {
                             years[j] = "(no year listed)";
                         } else {
                             years[j] = "(" + result.year + ")";
-                        }
+                        } // if
                         j++;
                         numResults++;
                         if (j == titles.length) {
                             break;
-                        }
+                        } // if
                     }
                 } // for
             } // if
-
             placeholder = author;
-
         } catch (IOException | InterruptedException | NullPointerException e) {
             alertError(e);
         } // try
     } // retrieveMedia2
 
 
+    /**
+     * Adds all the results from the arrays to the scene graph to display
+     * the list of adaptations.
+     */
     private void generateResults() {
         try {
             if (titles[0] == null) {
                 throw new NullPointerException("Sorry, there are no results available :(");
             } // if
-
             authorText.setText(author);
             Platform.runLater(() -> root.getChildren().clear());
             Platform.runLater(() -> root.getChildren().addAll(interact, loaded));
-
-
-
             String list = "";
 
             for (int i = 4; i < numResults; i++) {
                 list = list + titles[i] + " " + years[i] + "\n";
             } // for
-
             worksList.setText(list);
-
             for (int i = 0; i < 4; i++) {
                 pics[i] = new Image(images[i]);
             } // for
-
             imageview1.setImage(pics[0]);
             imageview2.setImage(pics[1]);
             imageview3.setImage(pics[2]);
             imageview4.setImage(pics[3]);
-
             imageview1.setFitHeight(200);
             imageview1.setFitWidth(150);
             imageview2.setFitHeight(200);
@@ -399,12 +401,10 @@ public class ApiApp extends Application {
             imageview3.setFitWidth(150);
             imageview4.setFitHeight(200);
             imageview4.setFitWidth(150);
-
             media1.setText(titles[0] + " " + years[0]);
             media2.setText(titles[1] + " " + years[1]);
             media3.setText(titles[2] + " " + years[2]);
             media4.setText(titles[3] + " " + years[3]);
-
             Platform.runLater(() -> imageLoad1.getChildren().clear());
             Platform.runLater(() -> imageLoad2.getChildren().clear());
             Platform.runLater(() ->
@@ -419,13 +419,10 @@ public class ApiApp extends Application {
             imageLoad2.setHgrow(imageview4, Priority.ALWAYS);
             imageLoad2.setHgrow(media3, Priority.ALWAYS);
             imageLoad2.setHgrow(media4, Priority.ALWAYS);
-
             media1.setWrappingWidth(150);
             media2.setWrappingWidth(150);
             media3.setWrappingWidth(150);
             media4.setWrappingWidth(150);
-
-
         } catch (NullPointerException npe) {
             alertError(npe);
         } // try
@@ -434,6 +431,10 @@ public class ApiApp extends Application {
     } // generateResults
 
 
+    /**
+     * Generates the IMDb API Key.
+     * @return the IMDb API Key.
+     */
     public String key() {
         String configPath = "resources/config.properties";
         try (FileInputStream configFileStream = new FileInputStream(configPath)) {
@@ -450,30 +451,57 @@ public class ApiApp extends Application {
 
 
 
+/**
+ * Represents a response from the Open Library API. This is used by Gson to
+ * create an object from the JSON response body.
+ */
     private static class BookResponse {
         int numFound;
         BookResult[] docs;
     } // BookResponse
 
+    /**
+     * Represents a result in a response from the OpenLibrary Search API. This is
+     * used by Gson to create an object from the JSON response body.
+     */
     private static class BookResult {
         @SerializedName("author_name") String[] authorName;
         String title;
     } // BookResult
 
+
+/**
+ * Represents a response from the IMDb API. This is used by Gson to
+ * create an object from the JSON response body.
+ */
     private static class IMDbNameResponse {
         IMDbNameResult[] results;
     } // IMDbNameResponse
 
+
+/**
+ * Represents a result in a response from the IMDb Search API. This is
+ * used by Gson to create an object from the JSON response body.
+ */
     private static class IMDbNameResult {
         String id;
         String title;
     } // IMDbNameResult
 
+
+/**
+ * Represents a response from the IMDb API. This is used by Gson to
+ * create an object from the JSON response body.
+ */
     private static class IMDbIDResponse {
         IMDbIDResult[] castMovies;
         IMDbIDResult[] knownFor;
     } // IMDbIDResponse
 
+    /**
+     * Represents a result in a response from the IMDb Search API. This is
+     * used by Gson to create an object from the JSON response body.
+     */
     private static class IMDbIDResult {
         String title;
         String role;
@@ -492,6 +520,7 @@ public class ApiApp extends Application {
         thread.setDaemon(true);
         thread.start();
     } // runNow
+
     /**
      * Show a modal error alert based on {@code cause}.
      * @param cause a {@link java.lang.Throwable Throwable} that caused the alert
